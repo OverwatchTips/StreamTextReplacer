@@ -30,6 +30,7 @@
     <h2 id="Setup">Setup</h2>
     <p>
         To setup this application, you need Java 16, the latest LTS release as of June 2022.
+        A full setup guide is located here: https://github.com/OverwatchTips/StreamTextReplacer/wiki/Setup
     </p>
 </article>
 <hr>
