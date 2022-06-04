@@ -7,7 +7,7 @@
     <groupId>com.overwatchtips</groupId>
     <artifactId>StreamTextReplacer</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <modules>
         <module>plugins/overtrack</module>
         <module>streamtextreplacer-api</module>

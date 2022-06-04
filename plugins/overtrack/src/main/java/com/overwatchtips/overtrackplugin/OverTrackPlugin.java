@@ -105,25 +105,31 @@ public class OverTrackPlugin extends ReplacerPlugin {
 
     @Override
     public String onRequest(String params) {
-        String rating = getUrlAsString("https://api2.overtrack.gg/overwatch/query/" + pluginConfig.shareToken() + "/sr");
-        if (rating != null && !rating.isEmpty() && isInteger(rating)) {
-            int ratingInt = Integer.parseInt(rating);
-            if (ratingInt > peakRatingFile.getPeakRating()) {
-                peakRatingFile.setPeakRating(ratingInt);
+        switch (params.toLowerCase()) {
+            case "rating": {
+                String rating = getUrlAsString("https://api2.overtrack.gg/overwatch/query/" + pluginConfig.shareToken() + "/sr");
+                if (rating != null && !rating.isEmpty() && isInteger(rating)) {
+                    int ratingInt = Integer.parseInt(rating);
+                    if (ratingInt > peakRatingFile.getPeakRating()) {
+                        peakRatingFile.setPeakRating(ratingInt);
+                    }
+                }
+
+                return rating;
+            }
+            case "record": {
+                return getUrlAsString("https://api2.overtrack.gg/overwatch/session/" + pluginConfig.shareToken());
+            }
+            case "last_match": {
+                return getUrlAsString("https://api2.overtrack.gg/overwatch/query/" + pluginConfig.shareToken() + "/last_match");
+            }
+            case "peak_rating": {
+                return String.valueOf(peakRatingFile.getPeakRating());
+            }
+            default: {
+                return null;
             }
         }
-
-        String record = getUrlAsString("https://api2.overtrack.gg/overwatch/session/" + pluginConfig.shareToken());
-        String lastMatch = getUrlAsString("https://api2.overtrack.gg/overwatch/query/" + pluginConfig.shareToken() + "/last_match");
-        String peakRating = String.valueOf(peakRatingFile.getPeakRating());
-
-        return switch (params.toLowerCase()) {
-            case "rating" -> rating;
-            case "record" -> record;
-            case "last_match" -> lastMatch;
-            case "peak_rating" -> peakRating;
-            default -> null;
-        };
     }
 
     private String getUrlAsString(String url) {
