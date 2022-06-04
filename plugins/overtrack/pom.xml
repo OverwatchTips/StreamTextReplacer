@@ -11,18 +11,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>overtrack</artifactId>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
-
     <dependencies>
         <dependency>
             <groupId>com.overwatchtips</groupId>
             <artifactId>streamtextreplacer-api</artifactId>
-            <version>${project.version}</version>
+            <version>${parent.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
