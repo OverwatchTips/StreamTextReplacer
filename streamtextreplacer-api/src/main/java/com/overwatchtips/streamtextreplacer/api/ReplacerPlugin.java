@@ -55,7 +55,7 @@ public abstract class ReplacerPlugin {
     public abstract long getRefreshTime();
 
     // When a placeholder is requested
-    public abstract String onRequest(String params);
+    public abstract String onRequest(String params, boolean sameCycle);
 
     public File getDataFolder() {
         return dataFolder;

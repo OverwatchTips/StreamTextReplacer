@@ -14,9 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package com.overwatchtips.overtrackplugin;
+package com.overwatchtips.overtrackplugin.records;
 
-public record PluginConfig(String shareToken,
-                           long refreshInterval,
-                           long maxLookupPeriod,
-                           long timeBetweenSessions) {}
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
+import java.util.Set;
+
+public record OverTrackData(Set<OverwatchMatch> games,
+                            @JsonProperty("last_evaluated_key") String lastEvaluatedKey,
+                            List<String> seasons) {
+
+}

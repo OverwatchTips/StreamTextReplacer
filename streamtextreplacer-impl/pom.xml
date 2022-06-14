@@ -5,7 +5,7 @@
     <parent>
         <artifactId>StreamTextReplacer</artifactId>
         <groupId>com.overwatchtips</groupId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.overwatchtips</groupId>
             <artifactId>streamtextreplacer-api</artifactId>
-            <version>${project.version}</version>
+            <version>${parent.version}</version>
         </dependency>
     </dependencies>
 

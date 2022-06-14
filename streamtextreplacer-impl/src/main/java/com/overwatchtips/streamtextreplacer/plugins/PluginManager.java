@@ -67,7 +67,7 @@ public class PluginManager {
 
                 if (bypassCache || !isInCooldown(plugin) || cached == null) {
                     String args = String.join("_", Arrays.copyOfRange(split, 1, split.length));
-                    String parsed = plugin.onRequest(args);
+                    String parsed = plugin.onRequest(args, usedPlugins.contains(plugin));
 
                     if (parsed == null) {
                         if (cached != null) {

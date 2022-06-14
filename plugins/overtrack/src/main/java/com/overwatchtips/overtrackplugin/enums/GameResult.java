@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package com.overwatchtips.overtrackplugin;
+package com.overwatchtips.overtrackplugin.enums;
 
-public record PluginConfig(String shareToken,
-                           long refreshInterval,
-                           long maxLookupPeriod,
-                           long timeBetweenSessions) {}
+public enum GameResult {
+    WIN, LOSS, DRAW, UNKNOWN
+}

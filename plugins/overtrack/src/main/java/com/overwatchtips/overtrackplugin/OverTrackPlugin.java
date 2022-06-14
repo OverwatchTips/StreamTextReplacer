@@ -19,20 +19,25 @@ package com.overwatchtips.overtrackplugin;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.overwatchtips.overtrackplugin.enums.GameResult;
+import com.overwatchtips.overtrackplugin.records.OverTrackData;
+import com.overwatchtips.overtrackplugin.records.OverwatchMatch;
 import com.overwatchtips.streamtextreplacer.api.ReplacerPlugin;
 import org.apache.logging.log4j.Logger;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLConnection;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class OverTrackPlugin extends ReplacerPlugin {
 
     private PluginConfig pluginConfig;
-    private PeakRatingFile peakRatingFile;
+    private TreeSet<OverwatchMatch> cachedData;
 
     public OverTrackPlugin(Logger logger) {
         super(logger);
@@ -73,7 +78,6 @@ public class OverTrackPlugin extends ReplacerPlugin {
 
             ObjectMapper mapper = new ObjectMapper();
             this.pluginConfig = mapper.readValue(configFile, PluginConfig.class);
-            this.peakRatingFile = new PeakRatingFile(this);
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -88,11 +92,7 @@ public class OverTrackPlugin extends ReplacerPlugin {
     private void createFile(File file) throws IOException {
         file.createNewFile();
 
-        PluginConfig pluginConfig = new PluginConfig("null", 30);
-        writeToFile(file, pluginConfig);
-    }
-
-    private void writeToFile(File file, PluginConfig pluginConfig) throws IOException {
+        PluginConfig pluginConfig = new PluginConfig("null", 30, 172800, 5400);
         ObjectMapper mapper = new ObjectMapper();
         ObjectWriter writer = mapper.writer(new DefaultPrettyPrinter());
         writer.writeValue(file, pluginConfig);
@@ -104,27 +104,64 @@ public class OverTrackPlugin extends ReplacerPlugin {
     }
 
     @Override
-    public String onRequest(String params) {
+    public String onRequest(String params, boolean sameCycle) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        TreeSet<OverwatchMatch> validMatches = new TreeSet<>(Collections.reverseOrder());
+        OverTrackData data;
+        if (sameCycle) {
+            validMatches = cachedData;
+        }else {
+            try {
+                data = mapper.readValue(new URL("https://api2.overtrack.gg/overwatch/games/" + pluginConfig.shareToken()), OverTrackData.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+
+            Set<OverwatchMatch> matches = data.games();
+            getLogger().info(matches.size() + " matches before removeIf");
+            matches.removeIf(match -> Instant.now().getEpochSecond() - match.time() > pluginConfig.maxLookupPeriod());
+            getLogger().info(matches.size() + " matches after removeIf");
+
+            long previousTimestamp = 0;
+            Iterator<OverwatchMatch> iterator = matches.iterator();
+            while (iterator.hasNext()) {
+                OverwatchMatch match = iterator.next();
+                if (previousTimestamp - match.time() < pluginConfig.timeBetweenSessions()) {
+                    validMatches.add(match);
+                }
+            }
+        }
+
+        cachedData = validMatches;
+
         switch (params.toLowerCase()) {
             case "rating": {
-                String rating = getUrlAsString("https://api2.overtrack.gg/overwatch/query/" + pluginConfig.shareToken() + "/sr");
-                if (rating != null && !rating.isEmpty() && isInteger(rating)) {
-                    int ratingInt = Integer.parseInt(rating);
-                    if (ratingInt > peakRatingFile.getPeakRating()) {
-                        peakRatingFile.setPeakRating(ratingInt);
-                    }
+                if (validMatches.isEmpty()) {
+                    return "Unknown";
                 }
 
-                return rating;
+                OverwatchMatch first = validMatches.first();
+                long currentSr = first.endSr() == 0 ? first.startSr() : first.endSr();
+                return String.valueOf(currentSr);
             }
-            case "record": {
-                return getUrlAsString("https://api2.overtrack.gg/overwatch/session/" + pluginConfig.shareToken());
+            case "wins": {
+                return getResults(validMatches, GameResult.WIN);
+            }
+            case "losses": {
+                return getResults(validMatches, GameResult.LOSS);
+            }
+            case "draws": {
+                return getResults(validMatches, GameResult.DRAW);
             }
             case "last_match": {
-                return getUrlAsString("https://api2.overtrack.gg/overwatch/query/" + pluginConfig.shareToken() + "/last_match");
-            }
-            case "peak_rating": {
-                return String.valueOf(peakRatingFile.getPeakRating());
+                if (validMatches.isEmpty()) {
+                    return "Unknown";
+                }
+
+                OverwatchMatch first = validMatches.first();
+                return first.result().name() + " on " + first.map();
             }
             default: {
                 return null;
@@ -132,47 +169,7 @@ public class OverTrackPlugin extends ReplacerPlugin {
         }
     }
 
-    private String getUrlAsString(String url) {
-        try {
-            URL urlObj = new URL(url);
-            URLConnection con = urlObj.openConnection();
-
-            con.setDoOutput(true);
-            con.connect();
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-
-            StringBuilder response = new StringBuilder();
-            String inputLine;
-
-            String newLine = System.getProperty("line.separator");
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine).append(newLine);
-            }
-
-            in.close();
-
-            return response.toString().split("\\|")[0].trim();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // Extracted from: https://stackoverflow.com/questions/5439529/determine-if-a-string-is-an-integer-in-java
-    public static boolean isInteger(String s) {
-        return isInteger(s,10);
-    }
-
-    public static boolean isInteger(String s, int radix) {
-        if(s.isEmpty()) return false;
-        for(int i = 0; i < s.length(); i++) {
-            if(i == 0 && s.charAt(i) == '-') {
-                if(s.length() == 1) return false;
-                else continue;
-            }
-            if(Character.digit(s.charAt(i),radix) < 0) return false;
-        }
-        return true;
+    private String getResults(Set<OverwatchMatch> matches, GameResult result) {
+        return String.valueOf(matches.stream().filter(match -> match.result() == result).count());
     }
 }
